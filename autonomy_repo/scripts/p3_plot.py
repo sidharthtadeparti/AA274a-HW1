@@ -17,13 +17,14 @@ class PlottingNode(Node):
         
         self.goal = des_angle
         self.plotted = False
-
         self.pub = self.create_publisher(TurtleBotState, "/cmd_pose", 10)
         self.pub_timer = self.create_timer(0.25, self.goal_pub_cb)
 
         self.plot_sub = self.create_subscription(
             TurtleBotState, "/state", self.plot_cb, 10
         )
+        print("Commanding a goal angle, and saving a plot!")
+        print("Please wait...")
 
         self.angles = []
         self.total_msg_cnt = total_msg_cnt
@@ -50,7 +51,7 @@ class PlottingNode(Node):
     def plot(self):
         num_msgs = len(self.angles)
         theta_traj = np.array(self.angles)
-        time = np.linspace(0, self.recording_duration, num=num_msgs)
+        time = np.linspace(0, self.total_msg_cnt / 100, num=num_msgs)
         goal_thetas = self.goal * np.ones_like(time)
 
         fig, ax = plt.subplots(nrows=1, ncols=1)
