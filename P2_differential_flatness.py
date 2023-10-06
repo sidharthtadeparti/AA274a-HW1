@@ -36,7 +36,16 @@ def compute_traj_coeffs(initial_state: State, final_state: State, tf: float) -> 
     Hint: Use the np.linalg.solve function.
     """
     ########## Code starts here ##########
-
+    A = np.array([[1,0,0,0,0,0,0,0], 
+                  [0,0,0,0,1,0,0,0],
+                  [1,tf,tf**2,tf**3,0,0,0,0],
+                  [0,0,0,0,1,tf,tf**2,tf**3],
+                  [0,1,0,0,0,0,0,0],
+                  [0,0,0,0,0,1,0,0],
+                  [0,1,2*tf,3*tf**2,0,0,0,0],
+                  [0,0,0,0,0,1,2*tf,3*tf**2]])
+    B = np.array([initial_state.x, initial_state.y,final_state.x,final_state.y,initial_state.xd, initial_state.yd,final_state.xd,final_state.yd])
+    coeffs = np.linalg.solve(A,B)
     ########## Code ends here ##########
     return coeffs
 
@@ -53,7 +62,41 @@ def compute_traj(coeffs: np.ndarray, tf: float, N: int) -> T.Tuple[np.ndarray, n
     """
     t = np.linspace(0, tf, N) # generate evenly spaced points from 0 to tf
     traj = np.zeros((N, 7))
+    
+    print(coeffs)
+    x1 = coeffs[0]
+    x2 = coeffs[1]
+    x3 = coeffs[2]
+    x4 = coeffs[3]
+    y1 = coeffs[4]
+    y2 = coeffs[5]
+    y3 = coeffs[6]
+    y4 = coeffs[7]
+
     ########## Code starts here ##########
+    for i in range(len(t)):
+        ct = t[i]
+        curr_x = x1 + x2*ct + x3*ct**2 + x4*ct**3
+        curr_y = y1 + y2*ct + y3*ct**2 + y4*ct**3
+        curr_xd =  x2 + 2*x3*ct + 3*x4*ct**2
+        curr_yd = y2 + 2*y3*ct + 3*y4*ct**2
+        curr_xdd = 2*x3 + 6*x4*ct
+        curr_ydd = 2*y3 + 6*y4*ct
+        if(curr_xd):
+            curr_theta = math.atan(curr_yd/curr_xd)
+        else:
+            if(curr_yd>0):
+                curr_theta = np.pi/2
+              
+            else:
+                curr_theta = -np.pi/2
+                
+            
+        #curr_v = math.sqrt(curr_xd**2 + curr_yd**2)
+        traj[i,:] = np.array([curr_x,curr_y,curr_theta,curr_xd,curr_yd,curr_xdd,curr_ydd])
+        
+        
+
 
     ########## Code ends here ##########
 
@@ -68,7 +111,18 @@ def compute_controls(traj: np.ndarray) -> T.Tuple[np.ndarray, np.ndarray]:
         om (np.array shape [N]) om at each point of traj
     """
     ########## Code starts here ##########
+    N = traj.shape[0]
+    V = np.zeros(N)
+    om = np.zeros(N)
+    for i in range(N):
+        [curr_x,curr_y,curr_theta,curr_xd,curr_yd,curr_xdd,curr_ydd]  = traj[i,:]
+        curr_v = math.sqrt(curr_xd**2 + curr_yd**2) 
+        M = np.array([[math.cos(curr_theta), - curr_v*math.sin(curr_theta)],[math.sin(curr_theta),  curr_v*math.cos(curr_theta)]])
+        Zdd =  np.array([curr_xdd,curr_ydd]).T
 
+        U = np.linalg.inv(M).dot(Zdd)
+        V[i] =curr_v
+        om[i] = U[1] 
     ########## Code ends here ##########
 
     return V, om

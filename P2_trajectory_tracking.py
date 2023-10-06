@@ -60,8 +60,22 @@ class TrajectoryTracker:
 
         dt = t - self.t_prev
         x_d, xd_d, xdd_d, y_d, yd_d, ydd_d = self.get_desired_state(t)
-
+        
         ########## Code starts here ##########
+        curr_v = self.V_prev
+        if curr_v < V_PREV_THRES:
+            curr_v = V_PREV_THRES
+        curr_theta = th
+        xd = curr_v*np.cos(curr_theta)
+        yd = curr_v*np.sin(curr_theta)
+        
+        M = np.array([[np.cos(curr_theta), - curr_v*np.sin(curr_theta)],
+                      [np.sin(curr_theta),  curr_v*np.cos(curr_theta)]])
+        M_inv = np.linalg.inv(M)
+        U = M_inv.dot(np.array([xdd_d,xdd_d]).T + np.array([self.kdx*(xd_d-xd),self.kdy*(yd_d-yd)]).T + np.array([self.kpx*(x_d-x),self.kpy*(y_d-y)]).T)  
+        V = curr_v + U[0]*dt
+        om = U[1]
+
 
         ########## Code ends here ##########
 
